@@ -1,0 +1,122 @@
+<!-- sample hidden webphone -->
+<html>
+   <body>
+       
+       <span class="label label-warning">Ramal 4001</span>
+    
+      <div id="widget-evoline-api-container" style="display:inline" width="10" height="20"></div>
+      <script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+      <script>
+         //todas as mensagens oriundas do webphone são recebidas aqui. - all msgs from webphone are received here
+         window.onmessage = function(e) {
+             //quando receber uma ligacao
+             if (e.data.message == 'chegandoChamada') {
+                 //alert('Chegando Chamada de ' + e.data.numeroChegando + ' para: ' + e.data.numeroDestino + ' chamada_recebida_id: ' + e.data.chamadaRecebidaId);
+                 $("#incomingCall").text("Nova Chamada");
+             }
+             //conectado, desconectado, chamando, encerrada, conversando # get status: connected, disconnected, ringing, ended, talking
+             if (e.data.message == 'status') {
+                 //alert('Status: ' + e.data.status);
+                 $("#status").text(e.data.status);
+                    if (e.data.status == 'encerrada') {
+                        $("#incomingCall").text("-");
+
+                    }
+             }
+             //o id é único e pode ser utilizado na api para recuperação de mais informações (get na api ou webhooks)# get Call ID, this can be used to recevery Call data
+             if (e.data.message == 'chamada_id') {
+                 alert('Chamada_id: ' + e.data.chamada_id);
+             }
+             //os erros são finais # erros
+             if (e.data.message == 'status_erro') {
+                 alert('Sem Permissão: ' + e.data.status_erro);
+             }
+                //rebendo o status de diagnóstico de internet e computador para verificar qualidade de ligação
+                if (e.data.message == 'stats_webphone') {
+                    //alert('Internet: ' + e.data.internet + ' e computador: ' + e.data.computador);
+                    var interStatus = e.data.internet;
+                    $("#internet").text(e.data.internet);
+                    $("#computador").text(e.data.computador);
+                }
+
+         };
+
+          
+
+            // message: 'conectar' , to conect webphone on the SIP server
+            // message: 'desconectar' ,  to disconnect webphone from the SIP server
+            // message: 'answer' ,  to answer a new call ringing on webphone
+            // message: 'hangup' , to hangupcall
+            // message: 'mute' , to mute microphone
+             function sendCmd(message) {
+                webphone.contentWindow.postMessage({
+                    message: message
+                }, '*');
+            }
+
+
+            // message: 'enviaDTMF' ,  to send a DTMF to PSTN/IVR and dtmf: (0,1,2,3,4,5,6,7,8,9,*,#)
+            function sendDtmf(message, dtmf) {
+                webphone.contentWindow.postMessage({
+                    message: 'enviaDTMF',
+                    'dtmf': dtmf
+                }, '*');
+            }
+          
+            // message: 'chamaNumero' , to start a new call to a given number - should send destination
+            function makeCall(phoneNumber) {
+                webphone.contentWindow.postMessage({
+                    message: 'chamaNumero',
+                    'numero': phoneNumber
+                }, '*');
+            }
+          
+          
+          // message: 'transferir' , to transfer the current call to another number - should send destination
+          // message: 'transferirConsulta' ,  to transfer the current call to a number after the destination answer and talk - should send destination
+            function transferCall(message, destExt) {
+                webphone.contentWindow.postMessage({
+                    message: message,
+                    'numeroTelefone': destExt
+                }, '*');
+            }
+          
+
+         
+      </script>
+      <!-- URL que foi pega pela API no /webphone - cria o iframe e injeta o webphone/ get url form /webphone and inject here-->
+
+      <script src="https://api.totalvoice.com.br/w3?key=cd4950a8314ad12b75243c1f517d85a5&tipo=hidden&ver=2&fechar_fim=1"></script>
+
+      <input type="button" onclick="javascript:sendCmd('conectar');" value="Connect"> (webphone connets automatically)<br>
+      <input type="button" onclick="javascript:sendCmd('desconectar');" value="Disconnect"> (disconnect)<br>
+
+      <input type="button" onclick="javascript:sendCmd('hangup');" value="Hangup">
+      <input type="button" onclick="javascript:makeCall(11945502254);" value="Call 11945502254">
+      <br>
+      <input type="button" onclick="javascript:makeCall(11945502254);" value="Call 11945502254">
+      <br>
+      <input type="button" onclick="javascript:makeCall('4001');" value="Chama 4001">
+      <br> (DTMF: 0,1,2,3,4,5,6,7,8,9,*,#)<br>
+      <input type="button" onclick="javascript:sendDtmf('enviaDTMF', '1');" value="DTMF 1">
+      <br>
+      <input type="button" onclick="javascript:sendDtmf('enviaDTMF', '*');" value="DTMF *">
+      <br>
+      <input type="button" onclick="javascript:sendDtmf('#');" value="DTMF #">
+      <br><input type="button" onclick="javascript:sendCmd('mute');" value="Mute/Unmute">
+      <br>
+      <br>
+      <input type="button" onclick="javascript:transferCall('transferirConsulta', '4001');" value="Transfer after consult to 4001">
+      <br>
+      <input type="button" onclick="javascript:transferCall('transferir', '4001');" value="Transfer 4001">
+      <input type="button" onclick="javascript:sendCmd('answer');" value="Answer a call">
+       
+
+   </body>
+    
+    
+    <dd><span class="label label-warning" id="incomingCall">-</span>
+
+    <dd><span class="label label-warning" id="status">Idle</span>
+    <dd><span class="label label-warning" id="internet">#</span> <span class="label label-warning" id="computador">#</span>
+</html>
